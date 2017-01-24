@@ -6,7 +6,7 @@ namespace Program
     public class Program
     {
         private const int StatusWidth = 50;
-        private const int _statusInterval = 250;
+        private const int _statusInterval = 500;
         private readonly RedisBomb[] _bombs;
         private bool _tickTock;
 
