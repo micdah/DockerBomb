@@ -1,37 +1,80 @@
 ﻿using System;
+using System.Threading;
 
 namespace Program
 {
     public class Program
     {
+        private const int StatusWidth = 50;
+        private const int _statusInterval = 250;
+        private readonly RedisBomb[] _bombs;
+        private bool _tickTock;
+
         private Program()
         {
             var number = ReadNumber();
 
-            var bombs = new RedisBomb[number];
+            Console.WriteLine();
+            var top = Console.CursorTop;
+
+            _bombs = new RedisBomb[number];
             for (var i = 0; i < number; i++)
-                bombs[i] = new RedisBomb();
+            {
+                _bombs[i] = new RedisBomb();
+            }
 
-            WaitForEnter("drop bombs");
-            foreach (var bomb in bombs)
-                bomb.StartDropping();
+            // Slowly start dropping bombs
+            var waitPerBomb = 50;
+            var updateStatusInterval = _statusInterval / waitPerBomb;
 
-            WaitForEnter("stop");
-            foreach (var bomb in bombs)
-                bomb.Dispose();
+            for (var i = 0; i < number; i++)
+            {
+                _bombs[i].StartDropping();
 
-            WaitForEnter("close");
+                Thread.Sleep(waitPerBomb);
+
+                if ((i + 1) % updateStatusInterval == 0)
+                    ShowStatus(top);
+            }
+
+            while (true)
+            {
+                Thread.Sleep(_statusInterval);
+                ShowStatus(top);
+            }
+        }
+
+        private void ShowStatus(int top)
+        {
+            Console.SetCursorPosition(0, top);
+
+            var roller = (_tickTock = !_tickTock) ? '/' : '\\';
+            Console.WriteLine($"Status {roller} (? : connecting, . : running, x : dead)");
+            for (var i = 0; i < _bombs.Length; i++)
+            {
+                var c = ' ';
+                switch (_bombs[i].State)
+                {
+                    case State.Connecting:
+                        c = '?';
+                        break;
+                    case State.Running:
+                        c = '.';
+                        break;
+                    case State.Dead:
+                        c = 'x';
+                        break;
+                }
+                Console.Write(c);
+
+                if ((i + 1) % StatusWidth == 0)
+                    Console.WriteLine();
+            }
         }
 
         public static void Main(string[] args)
         {
             new Program();
-        }
-
-        private static void WaitForEnter(string message)
-        {
-            Console.Write($"Press enter to {message}...");
-            Console.ReadLine();
         }
 
         private static int ReadNumber()
