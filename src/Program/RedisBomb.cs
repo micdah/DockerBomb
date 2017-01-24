@@ -6,14 +6,14 @@ namespace Program
 {
     public class RedisBomb : IDisposable
     {
+        private readonly string _counterKey;
         private readonly string _name = $"Bomb{Guid.NewGuid()}";
-        private readonly ConnectionMultiplexer _redis;
-        private readonly IDatabase _db;
         private readonly ManualResetEvent _stopEvent = new ManualResetEvent(false);
         private readonly ManualResetEvent _stoppedEvent = new ManualResetEvent(false);
         private readonly Thread _thread;
-        private readonly string _counterKey;
         private readonly string _valueKey;
+        private IDatabase _db;
+        private readonly ConnectionMultiplexer _redis;
 
         public RedisBomb()
         {
@@ -30,12 +30,6 @@ namespace Program
             };
         }
 
-        public void Start()
-        {
-            if (!_thread.IsAlive)
-                _thread.Start();
-        }
-
         public void Dispose()
         {
             // Stop thread
@@ -43,21 +37,42 @@ namespace Program
             _stoppedEvent.WaitOne();
 
             // Get final values
-            string counter = _db.StringGet(_counterKey);
-            string value = _db.StringGet(_valueKey);
+            if (_db != null)
+                try
+                {
+                    string counter = _db.StringGet(_counterKey);
+                    string value = _db.StringGet(_valueKey);
 
-            Console.WriteLine($"{_name}: {counter} iterations, final value {value}");
+                    Console.WriteLine($"{_name}: {counter} iterations, final value {value}");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Was unable to get final result for {_name}: {e.Message}");
+                }
 
             _redis?.Dispose();
+        }
+
+        public void StartDropping()
+        {
+            if (!_thread.IsAlive)
+                _thread.Start();
         }
 
         private void ThreadStart()
         {
             while (!_stopEvent.WaitOne(0))
-            {
-                _db.StringIncrement(_counterKey);
-                _db.StringSet(_valueKey, Guid.NewGuid().ToString());
-            }
+                try
+                {
+                    _db.StringIncrement(_counterKey);
+                    _db.StringSet(_valueKey, Guid.NewGuid().ToString());
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"An error occurred dropping bombs for {_name}: {e.Message}");
+                    _db = null;
+                    break;
+                }
 
             _stoppedEvent.Set();
         }

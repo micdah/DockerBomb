@@ -14,7 +14,7 @@ namespace Program
 
             WaitForEnter("drop bombs");
             foreach (var bomb in bombs)
-                bomb.Start();
+                bomb.StartDropping();
 
             WaitForEnter("stop");
             foreach (var bomb in bombs)
