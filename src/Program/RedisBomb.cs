@@ -48,7 +48,7 @@ namespace Program
             {
                 State = State.Connecting;
 
-                using (var redis = ConnectionMultiplexer.Connect("localhost:6379"))
+                using (var redis = ConnectionMultiplexer.Connect("127.0.0.1:6379"))
                 {
                     var db = redis.GetDatabase();
 
