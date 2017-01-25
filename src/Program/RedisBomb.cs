@@ -6,12 +6,14 @@ namespace Program
 {
     public class RedisBomb : IDisposable
     {
+        private const int MaxRetryCount = 5;
         private readonly string _counterKey;
         private readonly string _name = $"Bomb{Guid.NewGuid()}";
         private readonly ManualResetEvent _stopEvent = new ManualResetEvent(false);
         private readonly ManualResetEvent _stoppedEvent = new ManualResetEvent(false);
         private readonly Thread _thread;
         private readonly string _valueKey;
+        private int _currentRetryCount = 0;
 
         public RedisBomb()
         {
@@ -44,14 +46,33 @@ namespace Program
 
         private void ThreadStart()
         {
-            try
-            {
+            _currentRetryCount = 0;
+
+            try {
+                while (!_stopEvent.WaitOne(0) && _currentRetryCount++<MaxRetryCount) {
+                    if (!TryConnectAndRun()) {
+                        State = State.Connecting;
+                        _stopEvent.WaitOne(1000);
+                    }
+                }
+            } catch (Exception e) {
+                Console.WriteLine($"Unexpected error: {e.Message}");
+            } finally {
+                State = State.Dead;
+                _stoppedEvent.Set();
+            }
+        }
+
+        private bool TryConnectAndRun() {
+            try {
                 State = State.Connecting;
 
                 using (var redis = ConnectionMultiplexer.Connect("127.0.0.1:6379"))
                 {
                     var db = redis.GetDatabase();
 
+                    // Set running
+                    _currentRetryCount = 0;
                     State = State.Running;
 
                     while (!_stopEvent.WaitOne(0))
@@ -59,15 +80,11 @@ namespace Program
                         db.StringIncrement(_counterKey);
                         db.StringSet(_valueKey, Guid.NewGuid().ToString());
                     }
+
+                    return true;
                 }
-            }
-            catch (Exception)
-            {
-                State = State.Dead;
-            }
-            finally
-            {
-                _stoppedEvent.Set();
+            } catch (Exception) {
+                return false;
             }
         }
     }
