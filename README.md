@@ -1,6 +1,12 @@
 # DockerBomb
 Example code to demonstrate an issue with Docker for Windows under high concurrent load
 
+## prerequisites
+The code is written in .Net and requires *.Net Core*, the easiest way is just to intsall the command line tools from:
+* [microsoft.com/net/core](https://www.microsoft.com/net/core)
+
+Of course, if you have Visual Studio installed, this will also run it just fine.
+
 ## How to run
 * Clone code into local folder
 * Open command prompt and navigate to project root ```~\```
