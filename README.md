@@ -12,22 +12,10 @@ Of course, if you have Visual Studio installed, this will also run it just fine.
 
 ## How to run
 
-* Clone code into local folder
-* Open command prompt and navigate to project root ```~\```
-* Start redis container via ```docker-compose```
-
-  ```bash
-  ~\ # docker-compose up -d
-  ```
-
-* Navigate to ```~\src\Program``` and run
-
-  ```bash
-  dotnet restore
-  dotnet build
-  dotnet run
-  ```
-
+* Clone repository
+* Open terminal from root of repository
+* Start redis: `docker-compose up -d` 
+* Run program: `dotnet run --project DockrBomb` 
 * Enter number of threads to run (_try with 500_) and push enter
 * Let it run, until all ```.``` have been replaced with ```x``` indicating all threads have died
 
